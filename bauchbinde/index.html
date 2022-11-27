@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Bauchbinde</title>
+		<style>
+			html, body {
+				margin: 0px auto;
+				font-family: Some Time Later, Comic Sans MS, Tahoma, Verdana, Ubuntu, sans-serif;
+			}
+			
+			#tickerContainer {
+				display: none;
+				background-color: #ccc;
+				position: absolute;
+				top: 920px;
+				left: -999px;
+				padding-left: 16px;
+				padding-right: 16px;
+				transition: all ease-in-out 1s;
+			}
+			
+			h1 {
+				font-size: 2em;
+			}
+			
+			p {
+				font-size: 1.25em;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- HTML-Element -->
+		<div id="tickerContainer" />
+		
+		<!-- Beziehe "twitch-js" ein -->
+		<script src="https://unpkg.com/twitch-js"></script>
+		
+		<!-- JavaScript-Code -->
+		<script type="module">
+			const { Chat } = window.TwitchJs;
+			let token = undefined; // OAuth-Token
+			let username = undefined; // Benutzername
+			let rewardID = undefined; // Kanalpunkte-Belohnungs-ID
+			let channel = "CrazyGermanOtaku"; // Kanal
+			var currentTicker;
+			
+			// Name
+			const tickerName = [
+				"Aan",
+				"Ayano",
+				"Luca",
+			];
+			
+			// Alter (18-30)
+			const tickerAge = new Array(13).fill(0).map((_, i) => (i+1) + 17);
+			
+			// Text (Deutsch)
+			const tickerText = [
+				"Braucht mehr nichteuklidische Anime-/Manga-Charaktere.", // 3D und 2D ist beides Quatsch, wenn dann will man eine nichteuklidische Waifu. - @GyrosGeier (JvPeek-Twitch-Livestream vom 18. Mai 2022)
+				"Braucht mehr Zeit zwischen Freitag und Montag.", // https://cdn.discordapp.com/attachments/735636294671269951/963013615991009311/unknown.png
+				"Erfinder/in des Äthernets",
+				"Hat für @JvPeek ein Vtuber-Avatar erstellt - aus Gründen!",
+				"Ist auf Eskalation ausgelegt.",
+				"Ist der Meinung, dass Bayern zu Österreich gehört, Kappa.",
+				"Macht gerne Gehirnsachen.",
+				"Nutzt „Arch“ btw.", // EndeavourOS
+				"Nutzt die Maus mit links.",
+				"Privilegierter linkshändiger Numpad-User.",
+				"Wird gezwungen Windows zu benutzen.",
+				// Zitate
+				"„Sind Österreicher Bayern oder Bayern Österreicher?“",
+				"„Umso steiniger der Weg, umso wertvoller das Ziel!“", // https://cdn.discordapp.com/attachments/735636294671269951/958346862165901372/unknown.png
+				"„Windows ist nur ein Game-Launcher!“",
+				"„Wir brauchen mehr nichteuklidische Anime-/Manga-Charaktere!“", // 3D und 2D ist beides Quatsch, wenn dann will man eine nichteuklidische Waifu. - @GyrosGeier (JvPeek-Twitch-Livestream vom 18. Mai 2022)
+			];
+			
+			// Text (Englisch)
+			const tickerTextEN = [
+				"Needs more non-euclidean anime/manga characters.", // 3D and 2D are both nonsense, if then one wants a non-Euclidean waifu. - @GyrosGeier (translated from German) (JvPeek Twitch Livestream from May 18th 2022)
+				"Needs more time between Friday and Monday.", // https://cdn.discordapp.com/attachments/735636294671269951/963013615991009311/unknown.png
+				"Creator of the Aethernet",
+				"Has created a Vtuber avatar for @JvPeek - for reasons!",
+				"Is designed for escalation.",
+				"Has the opinion that Bavaria belongs to Austria, Kappa.",
+				"Likes to do brain things.",
+				"Uses „Arch“ btw.", // EndeavourOS
+				"Uses the mouse with left.",
+				"Privileged left-handed numpad user.",
+				"Is forced to use Windows.",
+				// Quotes
+				"„Are Austrians Bavarians or Bavarians Austrians?“",
+				"„The stonier the road, the more valuable the goal!“", // https://cdn.discordapp.com/attachments/735636294671269951/958346862165901372/unknown.png
+				"„Windows is just a game launcher!“",
+				"„We need more non-euclidean anime/manga characters!“", // 3D and 2D are both nonsense, if then one wants a non-Euclidean waifu. - @GyrosGeier (translated from German) (JvPeek Twitch Livestream from May 18th 2022)
+			];
+			
+			const handleMessage = (msg) => {
+				if (msg.event != "PRIVMSG") { return; }
+				
+				if (rewardID != undefined) {
+					if (msg.tags.customRewardId != undefined) {
+						if (msg.tags.customRewardId == rewardID) {
+							setTicker();
+						}
+					}
+				}
+				
+				// Chat-Befehl (Deutsch - !bauchbinde)
+				if (msg.message.startsWith("!bauchbinde") || msg.message.startsWith("!ticker")) {
+					setTicker();
+				}
+				
+				// Chat-Befehl (Englisch - !ticker)
+				if (msg.message.startsWith("!ticker")) {
+					setTickerEN();
+				}
+				
+				// Überprüfe Chat-Verbindung
+				if (msg.message.startsWith("!syscheck")) {
+					chatsay(channel, '/me Bauchbinde ist 𝗿𝗲𝗮𝗱𝘆');
+				}
+			};
+			
+			// Funktion für Bauchbinde-Befehl (Deutsch)
+			function setTicker() {
+				// Entferne derzeitige Bauchbinde, wenn neue Bauchbinde erstellt wird
+				console.log(currentTicker);
+				if (currentTicker != undefined) {
+					currentTicker.remove();
+				}
+				
+				// Wähle Name, Alter und Text zufällig aus
+				var writeName = tickerName[Math.floor(Math.random()*tickerName.length)];
+				var writeAge = tickerAge[Math.floor(Math.random()*tickerAge.length)];
+				var writeText = tickerText[Math.floor(Math.random()*tickerText.length)];
+				
+				const tickerContainer = document.getElementById('tickerContainer');
+				
+				// Erstelle div-Element mit Klasse "ticker"
+				let ticker = document.createElement('div');
+				ticker.classList.add("ticker");
+				
+				// Erstelle h1-Element
+				let tickerH1 = document.createElement('h1');
+				tickerH1.appendChild(document.createTextNode(writeName + " (" + writeAge + ")"));
+				ticker.appendChild(tickerH1);
+				
+				// Erstelle p-Element
+				let tickerP = document.createElement('p');
+				tickerP.appendChild(document.createTextNode(writeText));
+				ticker.appendChild(tickerP);
+				
+				let tickerObject = tickerContainer.appendChild(ticker);
+				currentTicker = tickerObject;
+				
+				// Verschiebe Bauchbinde
+				document.querySelector("#tickerContainer").style.display = "block";
+				setTimeout(() => {
+					document.querySelector("#tickerContainer").style.left = "0px";
+				}, 100);
+				setTimeout(() => {
+					document.querySelector("#tickerContainer").style.left = "-999px";
+					setTimeout(() => {
+						document.querySelector("#tickerContainer").style.display = "none";
+					}, 1000);
+				}, 15000);
+				
+				// Schreibe Log der aktuellen Bauchbinde
+				console.log(writeName + " (" + writeAge + ") - " + writeText);
+			}
+			
+			// Funktion für Bauchbinde-Befehl (Englisch)
+			function setTickerEN() {
+				// Entferne derzeitige Bauchbinde, wenn neue Bauchbinde erstellt wird
+				console.log(currentTicker);
+				if (currentTicker != undefined) {
+					currentTicker.remove();
+				}
+				
+				// Wähle Name, Alter und Text zufällig aus
+				var writeName = tickerName[Math.floor(Math.random()*tickerName.length)];
+				var writeAge = tickerAge[Math.floor(Math.random()*tickerAge.length)];
+				var writeText = tickerTextEN[Math.floor(Math.random()*tickerTextEN.length)];
+				
+				const tickerContainer = document.getElementById('tickerContainer');
+				
+				// Erstelle div-Element mit Klasse "ticker"
+				let ticker = document.createElement('div');
+				ticker.classList.add("ticker");
+				
+				// Erstelle h1-Element
+				let tickerH1 = document.createElement('h1');
+				tickerH1.appendChild(document.createTextNode(writeName + " (" + writeAge + ")"));
+				ticker.appendChild(tickerH1);
+				
+				// Erstelle p-Element
+				let tickerP = document.createElement('p');
+				tickerP.appendChild(document.createTextNode(writeText));
+				ticker.appendChild(tickerP);
+				
+				let tickerObject = tickerContainer.appendChild(ticker);
+				currentTicker = tickerObject;
+				
+				// Verschiebe Bauchbinde
+				document.querySelector("#tickerContainer").style.display = "block";
+				setTimeout(() => {
+					document.querySelector("#tickerContainer").style.left = "0px";
+				}, 100);
+				setTimeout(() => {
+					document.querySelector("#tickerContainer").style.left = "-999px";
+					setTimeout(() => {
+						document.querySelector("#tickerContainer").style.display = "none";
+					}, 1000);
+				}, 15000);
+				
+				// Schreibe Log der aktuellen Bauchbinde
+				console.log(writeName + " (" + writeAge + ") - " + writeText);
+			}
+			
+			function chatsay(channel, text) {
+				if (token != undefined) {
+					chatobj.say(channel, text);
+				} else {
+					console.log(text + " (is what I'd say if I HAD A TOKEN!!!)");
+				}
+			}
+			
+			const run = async () => {
+				const queryString = window.location.search;
+				const urlParams = new URLSearchParams(queryString);
+				
+				// Analysiere Kanalparameter
+				if(urlParams.has('channel')) {
+					channel = urlParams.get('channel');
+				}
+				
+				if(urlParams.has('rewardID')) {
+					rewardID = urlParams.get('rewardID');
+				}
+
+				if(urlParams.has("timeout")) {
+					timeout = urlParams.get("timeout");
+				}
+				
+				if(urlParams.has('username') && urlParams.has('token')) {
+					username = urlParams.get('username');
+					token = urlParams.get('token');
+				}
+				
+				const chat = new Chat({
+					token,
+					username,
+					log: { level: "warn" }
+				});
+				
+				chat.on("*", (message) => {
+					handleMessage(message);
+				});
+				
+				await chat.connect();
+				await chat.join(channel);
+				return chat;
+			};
+				
+			const chatobj = run();
+		</script>
+	</body>
+</html>
