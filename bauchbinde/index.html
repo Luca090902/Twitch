@@ -122,6 +122,12 @@
 				}
 			};
 			
+			/* Gebe alle 5 Minuten eine Bauchbinde aus
+			   Hier könnte Ihr Code stehen! */
+			window.setInterval(function () {
+				setTicker();
+			}, 300000);
+			
 			// Funktion für Bauchbinde-Befehl (Deutsch)
 			function setTicker() {
 				// Entferne derzeitige Bauchbinde, wenn neue Bauchbinde erstellt wird
